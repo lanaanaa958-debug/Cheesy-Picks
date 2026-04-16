@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheesy Picks | Cafe & Smart Ordering</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'], serif: ['Playfair Display', 'serif'] },
+                    colors: { aesthetic: { bg: '#FAF8F5', dark: '#2C2A29', gold: '#D4AF37', rust: '#C15C3D', sand: '#E6E2DD' } }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* ================= 1. ANIMASI BACKGROUND (Lebih Terlihat) ================= */
+        .hero-zoom {
+            animation: cinematicZoom 12s alternate infinite ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes cinematicZoom {
+            0% { transform: scale(1.02); }
+            100% { transform: scale(1.15); }
+        }
+
+        /* ================= 2. CAHAYA MELAYANG ESTETIK (Floating Orbs) ================= */
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+        .start-animations .orb { opacity: 0.4; } /* Muncul setelah loading */
+        
+        .orb-1 { width: 300px; height: 300px; background: #D4AF37; top: 10%; left: 10%; animation: float-orb 10s ease-in-out infinite; }
+        .orb-2 { width: 250px; height: 250px; background: #C15C3D; bottom: 10%; right: 15%; animation: float-orb 12s ease-in-out infinite reverse; }
+        .orb-3 { width: 200px; height: 200px; background: #E6E2DD; top: 40%; left: 50%; animation: float-orb 14s ease-in-out infinite 2s; }
+
+        @keyframes float-orb {
+            0% { transform: translateY(0) translateX(0) scale(1); }
+            33% { transform: translateY(-30px) translateX(20px) scale(1.1); }
+            66% { transform: translateY(20px) translateX(-20px) scale(0.9); }
+            100% { transform: translateY(0) translateX(0) scale(1); }
+        }
+
+        /* ================= 3. ANIMASI TEKS MASUK (Lebih "Nendang") ================= */
+        .hero-text-element { opacity: 0; transform: translateY(40px); }
+        
+        /* Trigger ini diaktifkan lewat JS setelah Preloader hilang */
+        .start-animations .hero-text-element {
+            animation: fadeUpBounce 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .start-animations .delay-1 { animation-delay: 0.2s; }
+        .start-animations .delay-2 { animation-delay: 0.4s; }
+        .start-animations .delay-3 { animation-delay: 0.6s; }
+        .start-animations .delay-4 { animation-delay: 0.8s; }
+
+        @keyframes fadeUpBounce {
+            0% { opacity: 0; transform: translateY(40px); }
+            60% { opacity: 1; transform: translateY(-5px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ================= 4. EFEK SHIMMER & LAINNYA ================= */
+        .btn-shimmer { position: relative; overflow: hidden; }
+        .btn-shimmer::after {
+            content: ''; position: absolute; top: -50%; left: -100%; width: 50%; height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-20deg); transition: all 0.5s;
+        }
+        .btn-shimmer:hover::after { animation: shimmer 1s forwards; }
+        @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
+
+        .glass-header { background: rgba(250, 248, 245, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
+        #scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: #D4AF37; z-index: 99999; width: 0%; transition: width 0.1s ease; }
+        #preloader { position: fixed; inset: 0; background: #2C2A29; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s ease; }
+    </style>
+</head>
+<body class="font-sans bg-aesthetic-bg text-aesthetic-dark selection:bg-aesthetic-gold selection:text-white overflow-x-hidden">
+
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <i data-lucide="pizza" class="w-12 h-12 text-aesthetic-gold animate-spin mb-4" style="animation-duration: 2s;"></i>
+        <h2 class="text-aesthetic-gold font-serif text-xl tracking-[0.3em] animate-pulse">CHEESY PICKS</h2>
+    </div>
+
+    <!-- SCROLL PROGRESS -->
+    <div id="scroll-progress"></div>
+
+    <!-- HEADER -->
+    <header id="main-header" class="fixed top-0 left-0 w-full z-40 transition-all duration-500 py-6 px-6 md:px-12 bg-transparent">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" id="logo-text" class="text-2xl md:text-3xl font-serif font-bold text-white transition-colors duration-500 drop-shadow-md hover:scale-105 transform">Cheesy Picks.</a>
+            
+            <nav class="hidden lg:flex gap-8 text-sm font-medium tracking-widest uppercase">
+                <a href="#menu" class="nav-link text-white hover:text-aesthetic-gold transition-colors duration-300">Menu</a>
+                <a href="#galeri" class="nav-link text-white hover:text-aesthetic-gold transition-colors duration-300">Suasana</a>
+                <a href="#lokasi" class="nav-link text-white hover:text-aesthetic-gold transition-colors duration-300">Kontak</a>
+            </nav>
+
+            <button onclick="toggleCart()" class="relative p-3 bg-aesthetic-gold text-aesthetic-dark rounded-full hover:bg-white transition-all transform hover:scale-110 shadow-[0_0_15px_rgba(212,175,55,0.5)] btn-shimmer z-50">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-aesthetic-rust text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-transparent hidden transition-transform duration-300 transform scale-0 shadow-md">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- HERO SECTION (Dengan Animasi Cahaya & Teks Baru) -->
+    <section id="hero-section" class="relative min-h-screen flex items-center justify-center bg-gray-900 pt-20 overflow-hidden">
+        
+        <!-- 1. Background Cinematic Zoom -->
+        <div class="absolute inset-0 overflow-hidden z-0">
+            <div class="absolute inset-[-10%] w-[120%] h-[120%] bg-cover bg-center bg-no-repeat hero-zoom" 
+                 style="background-image: url('http://hostgambar.vercel.app/image/AgACAgUAAyEGAATk_963AAIB52ng1WdH_XwmhGmbLZrXKvhkoUsKAAKNEmsb25AJVxz2VThPlsCPAQADAgADdwADOwQ');">
+            </div>
+        </div>
+        
+        <!-- Overlay Gradasi Gelap -->
+        <div class="absolute inset-0 bg-gradient-to-b from-aesthetic-dark/70 via-aesthetic-dark/40 to-aesthetic-dark/90 z-0"></div>
+        
+        <!-- 2. Cahaya Melayang Estetik (Orbs) -->
+        <div class="orb orb-1 z-0"></div>
+        <div class="orb orb-2 z-0"></div>
+        <div class="orb orb-3 z-0"></div>
+        
+        <!-- 3. Teks dengan Animasi Bounce -->
+        <div class="relative z-10 text-center px-6 max-w-4xl mt-12">
+            <span class="hero-text-element text-aesthetic-gold font-medium tracking-[0.3em] uppercase text-xs mb-4 block drop-shadow-md">
+                Purwodadi Cafe & Eatery
+            </span>
+            
+            <h1 class="hero-text-element delay-1 text-5xl md:text-7xl lg:text-8xl font-serif text-white mb-6 drop-shadow-lg leading-tight">
+                Rasa Klasik, <br><i class="font-light text-aesthetic-sand">Vibe Estetik.</i>
+            </h1>
+            
+            <p class="hero-text-element delay-2 text-aesthetic-sand/90 text-lg md:text-xl font-light mb-10 max-w-2xl mx-auto leading-relaxed drop-shadow-md">
+                Tempat ternyaman untuk nugas, bercerita, atau sekadar menikmati kopi dan hidangan cepat saji di jantung kota Purwodadi.
+            </p>
+            
+            <div class="hero-text-element delay-3 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#menu" class="btn-shimmer bg-aesthetic-gold hover:bg-white text-aesthetic-dark px-10 py-4 rounded-full font-bold transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] transform hover:-translate-y-1 text-sm tracking-wide uppercase">Pesan Sekarang</a>
+            </div>
+        </div>
+
+        <div class="hero-text-element delay-4 absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce z-10 hidden md:block">
+            <i data-lucide="mouse" class="w-6 h-6 text-white/70"></i>
+        </div>
+    </section>
+
+    <!-- FITUR -->
+    <section class="py-20 bg-white relative">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="0">
+                <div class="w-20 h-20 mx-auto bg-aesthetic-bg rounded-full flex items-center justify-center mb-5 border border-aesthetic-sand group-hover:border-aesthetic-rust group-hover:bg-aesthetic-rust transition-all duration-500 shadow-sm">
+                    <i data-lucide="coffee" class="w-8 h-8 text-aesthetic-rust group-hover:text-white group-hover:rotate-12 transition-all"></i>
+                </div>
+                <h4 class="font-serif font-bold text-aesthetic-dark text-lg">Kopi Spesial</h4>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Pilihan Terbaik</p>
+            </div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="100">
+                <div class="w-20 h-20 mx-auto bg-aesthetic-bg rounded-full flex items-center justify-center mb-5 border border-aesthetic-sand group-hover:border-aesthetic-rust group-hover:bg-aesthetic-rust transition-all duration-500 shadow-sm">
+                    <i data-lucide="smile" class="w-8 h-8 text-aesthetic-rust group-hover:text-white group-hover:-rotate-12 transition-all"></i>
+                </div>
+                <h4 class="font-serif font-bold text-aesthetic-dark text-lg">Suasana Santai</h4>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Atmosfer Tenang</p>
+            </div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="200">
+                <div class="w-20 h-20 mx-auto bg-aesthetic-bg rounded-full flex items-center justify-center mb-5 border border-aesthetic-sand group-hover:border-aesthetic-rust group-hover:bg-aesthetic-rust transition-all duration-500 shadow-sm">
+                    <i data-lucide="users" class="w-8 h-8 text-aesthetic-rust group-hover:text-white group-hover:scale-110 transition-all"></i>
+                </div>
+                <h4 class="font-serif font-bold text-aesthetic-dark text-lg">Berkelompok</h4>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Meja Luas</p>
+            </div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="300">
+                <div class="w-20 h-20 mx-auto bg-aesthetic-bg rounded-full flex items-center justify-center mb-5 border border-aesthetic-sand group-hover:border-aesthetic-rust group-hover:bg-aesthetic-rust transition-all duration-500 shadow-sm">
+                    <i data-lucide="baby" class="w-8 h-8 text-aesthetic-rust group-hover:text-white group-hover:scale-110 transition-all"></i>
+                </div>
+                <h4 class="font-serif font-bold text-aesthetic-dark text-lg">Ramah Anak</h4>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Aman & Nyaman</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- MENU PESANAN PINTAR -->
+    <section id="menu" class="py-24 bg-aesthetic-bg relative overflow-hidden">
+        <div class="absolute top-20 right-10 w-64 h-64 bg-aesthetic-gold/10 rounded-full blur-[100px] animate-[pulse_5s_infinite]"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-20" data-aos="fade-up">
+                <span class="text-aesthetic-rust text-xs font-bold uppercase tracking-[0.2em] block mb-3">Pesanan Langsung</span>
+                <h2 class="text-4xl md:text-5xl font-serif font-bold">Koleksi Menu Pintar</h2>
+                <div class="w-20 h-0.5 bg-aesthetic-gold mx-auto mt-6 transition-all hover:w-32"></div>
+            </div>
+            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-3 gap-10 perspective-1000"></div>
+        </div>
+    </section>
+
+    <!-- GALERI SUASANA -->
+    <section id="galeri" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-16" data-aos="fade-right">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold italic mb-4">Ruang <span class="not-italic text-aesthetic-rust">Cheesy Picks.</span></h2>
+                <p class="text-gray-500 font-light">Dari spot nugas yang tenang hingga area keluarga yang nyaman.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Foto 1 (Kiri Besar) -->
+                <div class="h-[400px] md:h-[500px] md:col-span-2 overflow-hidden rounded-[2.5rem] relative group shadow-lg" data-aos="fade-up">
+                    <img src="http://hostgambar.vercel.app/image/AgACAgUAAyEGAATk_963AAIB5Gng1WVkonGFQe00ylBs6ZlAxPa3AAKKEmsb25AJVwl0R9GoqnKyAQADAgADdwADOwQ" alt="" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out">
+                    <div class="absolute inset-0 bg-gradient-to-t from-aesthetic-dark/90 via-transparent to-transparent flex flex-col justify-end p-8 opacity-90 group-hover:opacity-100 transition-opacity duration-500">
+                        <h4 class="text-white text-3xl font-serif transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">Pojok Kreativitas</h4>
+                        <p class="text-white/80 mt-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 delay-100">Bawa laptop Anda, kami siapkan suasananya.</p>
+                    </div>
+                </div>
+                
+                <!-- Foto 2 & 3 (Kanan Bertumpuk) -->
+                <div class="md:col-span-1 flex flex-col gap-6">
+                    <div class="h-[188px] md:h-[238px] overflow-hidden rounded-[2.5rem] relative group shadow-lg" data-aos="fade-up" data-aos-delay="150">
+                        <img src="http://hostgambar.vercel.app/image/AgACAgUAAyEGAATk_963AAIB5Wng1WV1XFKcei1KZpTZIOiBGD0WAAKLEmsb25AJV6CkB4cY2sN2AQADAgADdwADOwQ" alt="" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out">
+                        <div class="absolute inset-0 bg-gradient-to-t from-aesthetic-dark/90 to-transparent flex items-end p-6">
+                            <h4 class="text-white text-xl font-serif transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">Area Santai</h4>
+                        </div>
+                    </div>
+                    <div class="h-[188px] md:h-[238px] overflow-hidden rounded-[2.5rem] relative group shadow-lg" data-aos="fade-up" data-aos-delay="300">
+                        <img src="http://hostgambar.vercel.app/image/AgACAgUAAyEGAATk_963AAIB5mng1WXARipPnwz9U4r7CK_BiJWJAAKMEmsb25AJV6kGsFUYBuL7AQADAgADdwADOwQ" alt="" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out">
+                        <div class="absolute inset-0 bg-gradient-to-t from-aesthetic-dark/90 to-transparent flex items-end p-6">
+                            <h4 class="text-white text-xl font-serif transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">Sudut Inspirasi</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INFO LOKASI & JAM -->
+    <section id="lokasi" class="py-24 bg-aesthetic-bg">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="bg-aesthetic-dark rounded-[3rem] overflow-hidden flex flex-col lg:flex-row shadow-[0_20px_50px_rgba(44,42,41,0.2)]" data-aos="zoom-in" data-aos-duration="1000">
+                
+                <!-- Kiri: Jam Operasional -->
+                <div class="lg:w-1/2 p-10 md:p-16 border-b lg:border-b-0 lg:border-r border-white/10 text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-bl-full"></div>
+                    <h3 class="text-3xl font-serif mb-8 flex items-center gap-3 relative z-10">
+                        <i data-lucide="clock" class="text-aesthetic-gold animate-[spin_10s_linear_infinite]"></i> Operasional
+                    </h3>
+                    <div class="space-y-4 font-light text-base relative z-10">
+                        <div class="flex justify-between py-3 border-b border-white/10">
+                            <span>Senin</span><span class="text-aesthetic-rust font-bold uppercase tracking-widest text-xs bg-aesthetic-rust/10 px-3 py-1 rounded-full">Tutup</span>
+                        </div>
+                        <div class="flex justify-between py-3 border-b border-white/10">
+                            <span>Selasa - Minggu</span><span>11.00 – 19.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kanan: Lokasi & Maps -->
+                <div class="lg:w-1/2 p-10 md:p-16 text-white relative">
+                    <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-aesthetic-rust/20 rounded-full blur-3xl animate-[pulse_4s_infinite]"></div>
+                    <h3 class="text-3xl font-serif mb-8 flex items-center gap-3 relative z-10">
+                        <i data-lucide="map-pin" class="text-aesthetic-gold animate-bounce"></i> Lokasi Kami
+                    </h3>
+                    <p class="text-lg font-light mb-8 text-aesthetic-sand relative z-10 leading-relaxed">
+                        Jl. Banyuono II No.39, Jetis Barat, Purwodadi, <br> Kab. Grobogan, Jawa Tengah 58111
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 relative z-10">
+                        <a href="https://maps.google.com/?q=Jl.+Banyuono+II+No.39,+Purwodadi" target="_blank" class="btn-shimmer bg-white text-aesthetic-dark px-8 py-3 rounded-full font-bold text-sm hover:bg-aesthetic-gold transition-colors text-center shadow-lg">
+                            Buka di Google Maps
+                        </a>
+                        <a href="https://wa.me/6281271747269" target="_blank" class="border border-aesthetic-sand px-8 py-3 rounded-full font-bold text-sm hover:bg-white/10 transition-colors text-center">
+                            Chat Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-10 text-center border-t border-aesthetic-sand/50 bg-aesthetic-bg">
+        <div class="text-aesthetic-dark/50 text-xs tracking-[0.2em] uppercase font-semibold">
+            &copy; 2026 CHEESY PICKS PURWODADI.
+        </div>
+    </footer>
+
+    <!-- CART MODAL (Keranjang & Form Checkout) -->
+    <div id="cart-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-all duration-400">
+        <div class="absolute inset-0 bg-aesthetic-dark/50 backdrop-blur-sm" onclick="toggleCart()"></div>
+        <div class="absolute right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-500 rounded-l-[2rem]" id="cart-content">
+            
+            <div class="flex justify-between items-center p-6 border-b border-aesthetic-sand/60">
+                <h3 class="text-2xl font-serif font-bold text-aesthetic-dark flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="text-aesthetic-rust"></i> Pesanan
+                </h3>
+                <button onclick="toggleCart()" class="p-2 bg-aesthetic-bg rounded-full hover:bg-aesthetic-rust hover:text-white transition-all transform hover:rotate-90">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div id="cart-items" class="flex-grow overflow-y-auto custom-scrollbar p-6 space-y-4"></div>
+
+            <div id="checkout-section" class="p-6 bg-aesthetic-bg border-t border-aesthetic-sand/60 hidden">
+                <h4 class="text-xs font-bold uppercase text-aesthetic-rust mb-4 tracking-widest">Lengkapi Data Anda</h4>
+                
+                <div class="space-y-3 mb-4">
+                    <input type="text" id="cust-name" placeholder="Nama Pemesan (Wajib)" class="w-full px-4 py-3 rounded-xl border border-aesthetic-sand focus:ring-2 focus:ring-aesthetic-gold/50 text-sm outline-none transition-shadow shadow-sm">
+                    <input type="text" id="table-num" placeholder="Nomor Meja (Wajib)" class="w-full px-4 py-3 rounded-xl border border-aesthetic-sand focus:ring-2 focus:ring-aesthetic-gold/50 text-sm outline-none transition-shadow shadow-sm">
+                    <textarea id="order-notes" rows="2" placeholder="Catatan Tambahan (Opsional)" class="w-full px-4 py-3 rounded-xl border border-aesthetic-sand focus:ring-2 focus:ring-aesthetic-gold/50 text-sm outline-none resize-none transition-shadow shadow-sm"></textarea>
+                </div>
+                
+                <p id="form-error" class="text-red-500 text-xs hidden mb-3 bg-red-50 p-2 rounded-lg border border-red-100 flex items-center gap-1">
+                    <i data-lucide="alert-circle" class="w-4 h-4 inline"></i> Mohon isi Nama dan Nomor Meja.
+                </p>
+                
+                <div class="flex justify-between font-bold items-center mb-4 pt-2">
+                    <span class="text-sm text-gray-500">Total Harga</span>
+                    <span id="cart-total" class="text-2xl text-aesthetic-dark">Rp 0</span>
+                </div>
+                
+                <button onclick="checkoutToWA()" class="btn-shimmer w-full bg-aesthetic-dark text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-aesthetic-rust transition-colors shadow-lg active:scale-95">
+                    <i data-lucide="send" class="w-5 h-5"></i> Kirim ke WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Animasi 3D Tilt & Scroll -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    
+    <script>
+        // Render Menu Pintar
+        const menus = [
+            { name: "Cheesy Beef Burger", price: 35000, tag: "Cepat Saji", img: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=800", desc: "Patty sapi tebal dengan lapisan keju mozarella meleleh dan saus rahasia." },
+            { name: "Signature Iced Latte", price: 22000, tag: "Kopi", img: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=800", desc: "Racikan kopi arabika berpadu dengan susu creamy yang menyegarkan." },
+            { name: "Golden Fries Platter", price: 18000, tag: "Snack Anak", img: "https://images.unsplash.com/photo-1593006526979-4f8fc04fc8f3?auto=format&fit=crop&q=80&w=800", desc: "Kentang goreng renyah dengan bumbu rahasia. Porsi pas untuk bersantai." }
+        ];
+
+        const menuGrid = document.getElementById('menu-grid');
+        menus.forEach((m, i) => {
+            menuGrid.innerHTML += `
+                <div class="tilt-card bg-white p-5 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all group cursor-pointer" data-aos="fade-up" data-aos-delay="${i*150}">
+                    <div class="h-60 rounded-[1.5rem] overflow-hidden mb-5 relative">
+                        <img src="${m.img}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        <span class="absolute top-4 left-4 bg-aesthetic-dark/80 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full uppercase tracking-widest">${m.tag}</span>
+                    </div>
+                    <h3 class="font-serif text-2xl font-bold mb-2 group-hover:text-aesthetic-rust transition-colors">${m.name}</h3>
+                    <p class="text-sm text-gray-500 mb-6 font-light line-clamp-2 h-10">${m.desc}</p>
+                    <div class="flex justify-between items-center border-t border-aesthetic-sand/50 pt-4">
+                        <span class="font-bold text-lg text-aesthetic-rust">Rp ${m.price.toLocaleString('id-ID')}</span>
+                        <button onclick="addToCart('${m.name}', ${m.price}); event.stopPropagation();" class="bg-aesthetic-bg border border-aesthetic-sand text-aesthetic-dark p-3 rounded-xl hover:bg-aesthetic-rust hover:text-white hover:border-aesthetic-rust transition-all active:scale-90 shadow-sm">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Inisialisasi Plugin Animasi 
+        AOS.init({ once: true, offset: 50, duration: 800, easing: 'ease-out-cubic' });
+        lucide.createIcons();
+        VanillaTilt.init(document.querySelectorAll(".tilt-card"), { max: 8, speed: 400, glare: true, "max-glare": 0.15, scale: 1.02 });
+
+        // Layar Loading & Trigger Animasi Hero
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('preloader').style.opacity = '0';
+                
+                // PENTING: Memicu animasi teks & orb HANYA SETELAH preloader hilang
+                document.getElementById('hero-section').classList.add('start-animations');
+                
+                setTimeout(() => document.getElementById('preloader').remove(), 600);
+            }, 600); // Waktu loading pura-pura
+        }
+
+        // Header Blur & Scroll Progress
+        window.addEventListener('scroll', () => {
+            let sc = window.scrollY;
+            document.getElementById('scroll-progress').style.width = (sc / (document.body.offsetHeight - window.innerHeight) * 100) + '%';
+            
+            const hd = document.getElementById('main-header');
+            const lg = document.getElementById('logo-text');
+            const nl = document.querySelectorAll('.nav-link');
+            
+            if (sc > 50) {
+                hd.className = "fixed top-0 left-0 w-full z-40 transition-all duration-500 py-4 px-6 md:px-12 glass-header";
+                lg.classList.replace('text-white', 'text-aesthetic-dark');
+                nl.forEach(l => l.classList.replace('text-white', 'text-aesthetic-dark'));
+            } else {
+                hd.className = "fixed top-0 left-0 w-full z-40 transition-all duration-500 py-6 px-6 md:px-12 bg-transparent";
+                lg.classList.replace('text-aesthetic-dark', 'text-white');
+                nl.forEach(l => l.classList.replace('text-aesthetic-dark', 'text-white'));
+            }
+        });
+
+        // Logika Keranjang Pintar
+        let cart = [];
+        
+        const toggleCart = () => {
+            const modal = document.getElementById('cart-modal');
+            const content = document.getElementById('cart-content');
+            if (modal.classList.contains('invisible')) {
+                modal.classList.remove('invisible');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); content.classList.add('translate-x-full');
+                setTimeout(() => { modal.classList.add('invisible'); }, 300);
+            }
+        };
+
+        const addToCart = (name, price) => {
+            let item = cart.find(i => i.name === name);
+            item ? item.qty++ : cart.push({ name, price, qty: 1 });
+            updateCart();
+            
+            const badge = document.getElementById('cart-count');
+            badge.classList.remove('hidden', 'scale-0');
+            badge.classList.add('scale-125');
+            setTimeout(() => { badge.classList.remove('scale-125'); badge.classList.add('scale-100'); }, 200);
+        };
+
+        const changeQty = (idx, delta) => {
+            cart[idx].qty += delta;
+            if (cart[idx].qty <= 0) cart.splice(idx, 1);
+            updateCart();
+        };
+
+        const updateCart = () => {
+            let html = '', total = 0, count = 0;
+            if (!cart.length) {
+                document.getElementById('cart-items').innerHTML = '<div class="flex flex-col items-center justify-center h-full opacity-40"><i data-lucide="shopping-bag" class="w-12 h-12 mb-3 text-aesthetic-sand animate-bounce"></i><p class="text-sm italic">Keranjang kosong</p></div>';
+                document.getElementById('checkout-section').classList.add('hidden');
+                document.getElementById('cart-count').classList.add('hidden', 'scale-0');
+                lucide.createIcons();
+                return;
+            }
+            
+            cart.forEach((c, i) => {
+                total += c.price * c.qty; count += c.qty;
+                html += `
+                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-aesthetic-sand/50 shadow-sm animate-[slideUpReveal_0.3s_ease-out_forwards]" style="opacity:0; animation-delay: ${i*0.1}s">
+                        <div>
+                            <h5 class="font-bold text-sm text-aesthetic-dark">${c.name}</h5>
+                            <p class="text-xs text-aesthetic-rust font-semibold mt-1">Rp ${c.price.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-aesthetic-bg rounded-lg p-1 border border-aesthetic-sand">
+                            <button onclick="changeQty(${i},-1)" class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-aesthetic-dark active:scale-90">-</button>
+                            <span class="text-xs font-bold w-4 text-center">${c.qty}</span>
+                            <button onclick="changeQty(${i},1)" class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-aesthetic-dark active:scale-90">+</button>
+                        </div>
+                    </div>`;
+            });
+            
+            document.getElementById('cart-items').innerHTML = html;
+            document.getElementById('cart-total').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-count').classList.remove('hidden', 'scale-0');
+            document.getElementById('cart-count').classList.add('scale-100');
+            document.getElementById('checkout-section').classList.remove('hidden');
+        };
+
+        const checkoutToWA = () => {
+            let name = document.getElementById('cust-name').value.trim();
+            let table = document.getElementById('table-num').value.trim();
+            let notes = document.getElementById('order-notes').value.trim();
+            let err = document.getElementById('form-error');
+
+            if (!name || !table) {
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.add('hidden'), 4000);
+                if(!name) document.getElementById('cust-name').classList.add('animate-[pulse_0.5s_3]');
+                if(!table) document.getElementById('table-num').classList.add('animate-[pulse_0.5s_3]');
+                setTimeout(() => {
+                    document.getElementById('cust-name').classList.remove('animate-[pulse_0.5s_3]');
+                    document.getElementById('table-num').classList.remove('animate-[pulse_0.5s_3]');
+                }, 1500);
+                return;
+            }
+            err.classList.add('hidden');
+
+            let msg = `Halo *Cheesy Picks*!\n\n👤 *Nama:* ${name}\n🪑 *Meja:* ${table}\n\n*Pesanan:*\n`;
+            let total = 0;
+            cart.forEach(c => { msg += `• ${c.name} (${c.qty}x) = Rp ${(c.price * c.qty).toLocaleString('id-ID')}\n`; total += c.price * c.qty; });
+            msg += `\n💰 *Total: Rp ${total.toLocaleString('id-ID')}*\n`;
+            if (notes) msg += `\n📝 *Catatan:*\n_${notes}_\n`;
+            
+            window.open(`https://wa.me/6281271747269?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+    </script>
+</body>
+</html>
